@@ -1,0 +1,10 @@
+= form_tag images_path, method: 'post', multipart: true do |f|
+  .controll
+    %label file
+    = file_field_tag :file
+  - if ENV['HEROKER_UPLOAD_TOKEN']
+    .controll
+      %label upload_token
+      = text_field_tag :upload_token
+  .action
+  = submit_tag 'upload'
