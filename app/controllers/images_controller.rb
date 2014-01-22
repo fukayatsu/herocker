@@ -6,6 +6,7 @@ class ImagesController < ApplicationController
 
   def show
     image = Image.find_by(name: params[:id])
+    response.headers["Expires"] = 1.year.from_now.httpdate
     send_data(image.content, disposition: :inline, type: image.content_type)
   end
 
