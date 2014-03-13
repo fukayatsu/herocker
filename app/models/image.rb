@@ -8,10 +8,10 @@ class Image < ActiveRecord::Base
   end
 
   class << self
-    def update_or_create_from_file!(file)
-      return nil if file.blank?
+    def update_or_create!(file, base64image)
+      return nil if file.blank? && base64image.blank?
 
-      image_blob = file.read
+      image_blob = file.try(:read) || Base64.decode64(base64image)
       name = Digest::MD5.hexdigest(image_blob)
 
       if image = find_by(name: name)
@@ -19,41 +19,33 @@ class Image < ActiveRecord::Base
         return image
       end
 
-      create!(
+      image = new(
         name:              name,
-        original_filename: file.original_filename,
-        extname:           File.extname(file.original_filename),
         content:           image_blob,
-        content_type:      file.content_type,
         size:              image_blob.size,
-        protected:         false,
+        protected:         false
       )
-    end
 
-    def update_or_create_from_blob!(base64image)
-      return nil if base64image.blank?
-
-      # image_blob = base64image.unpack('m')[0]
-      image_blob = Base64.decode64(base64image)
-      name = Digest::MD5.hexdigest(image_blob)
-      if image = find_by(name: name)
-        image.update!(updated_at: Time.now)
-        return image
+      if file.present?
+        image.attributes = {
+          original_filename: file.original_filename,
+          extname:           File.extname(file.original_filename),
+          content_type:      file.content_type,
+        }
+      else
+        content_type = detect_content_type(image_blob)
+        ext          = content_type.split('/')[1]
+        image.attributes = {
+          original_filename: "_image.#{ext}",
+          extname:           ".#{ext}",
+          content_type:      content_type,
+        }
       end
-
-      content_type = detect_content_type(image_blob)
-      ext          = content_type.split('/')[1]
-
-      create!(
-        name:              name,
-        original_filename: "_image.#{ext}",
-        extname:           ".#{ext}",
-        content:           image_blob,
-        content_type:      content_type,
-        size:              image_blob.size,
-        protected:         false,
-      )
+      image.save!
+      image
     end
+
+  private
 
     def detect_content_type(blob)
       fm = FileMagic.mime

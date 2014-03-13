@@ -47,8 +47,7 @@ private
   end
 
   def create_or_update_image
-    return if @image = Image.update_or_create_from_file!(params[:file])  ||
-      Image.update_or_create_from_blob!(params[:image])
+    return if @image = Image.update_or_create!(params[:file], params[:image])
 
     @error_message = "image is missing"
     respond_to do |format|
