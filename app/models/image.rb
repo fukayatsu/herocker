@@ -1,5 +1,3 @@
-require "filemagic"
-
 class Image < ActiveRecord::Base
   after_create :delete_exceeded_image
 
@@ -33,8 +31,8 @@ class Image < ActiveRecord::Base
           content_type:      file.content_type,
         }
       else
-        content_type = detect_content_type(image_blob)
-        ext          = content_type.split('/')[1]
+        ext          = detect_file_type(image_blob)
+        content_type = ext == "jpg" ? "image/jpeg" : "image/#{ext}"
         image.attributes = {
           original_filename: "_image.#{ext}",
           extname:           ".#{ext}",
@@ -47,16 +45,22 @@ class Image < ActiveRecord::Base
 
   private
 
-    def detect_content_type(blob)
-      fm = FileMagic.mime
-      fm.simplified = true
-      content_type  = nil
-      Tempfile.open('blob_tmp_') do |tempfile|
-        tempfile.binmode
-        tempfile.write(blob)
-        content_type = fm.file(tempfile.path)
+    def detect_file_type(blob)
+      png  = Regexp.new("\x89PNG".force_encoding("binary"))
+      jpg  = Regexp.new("\xff\xd8\xff\xe0\x00\x10JFIF".force_encoding("binary"))
+      jpg2 = Regexp.new("\xff\xd8\xff\xe1(.*){2}Exif".force_encoding("binary"))
+      case blob
+      when /^GIF8/
+        'gif'
+      when /^#{png}/
+        'png'
+      when /^#{jpg}/
+        'jpg'
+      when /^#{jpg2}/
+        'jpg'
+      else
+        'unknown'
       end
-      content_type
     end
   end
 
