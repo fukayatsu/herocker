@@ -28,6 +28,8 @@ $ heroku config:set HEROKER_UPLOAD_TOKEN=fuga
 - `/images`から手動でアップロードする
     - 画像ページにリダイレクト
 - スクリプトから`/images.json`にPOSTする
+    - `Content-Type: multipart/form-data`で`file=`を指定
+    - `Content-Type: application/json`で`{"image":"<base64 encoded image>"}`
     - `{"image_url":"http://example.com/images/[md5].jpg"}`みたいなjsonが返ってくる
 
 ## 認証
